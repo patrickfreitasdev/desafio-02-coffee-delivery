@@ -1,10 +1,13 @@
-import { Bank, CreditCard, CurrencyDollar, MapPinLine } from "phosphor-react"
+import { Bank, CreditCard, CurrencyDollar, MapPinLine, Money } from "phosphor-react"
 import { BairroInput, CepInput, CheckoutFormAddressWrapper, CheckoutFormContainer, CheckoutFormInputs, CheckoutFormPaymentWrapper, CheckoutFormRadioWrapper, CidadeInput, ComplementoInputWrapper, DefaultInputStyle, NumeroInput, RuaInput, UfInput } from "./styles"
 import { useFormContext } from "react-hook-form";
 
 export const CheckoutForm = () => {
 
-  const { register } = useFormContext();
+  const { register, watch } = useFormContext();
+
+  const isComplementFilled = watch('complement');
+  const shouldRemoveSpan = !isComplementFilled;
 
   return (
     <CheckoutFormContainer>
@@ -35,6 +38,7 @@ export const CheckoutForm = () => {
               placeholder="Complemento"
               {...register('complement')}
             />
+            {shouldRemoveSpan && <span>Opcional</span>}
           </ComplementoInputWrapper>
           <BairroInput
             placeholder="Bairro"
@@ -67,7 +71,7 @@ export const CheckoutForm = () => {
             {...register('paymentTypeInput')}
           />
           <label htmlFor="credito">
-            <CreditCard /> Cartão de crédito
+            <CreditCard size={16} /> Cartão de crédito
           </label>
 
 
@@ -78,7 +82,7 @@ export const CheckoutForm = () => {
             {...register('paymentTypeInput')}
           />
           <label htmlFor="debito">
-            <Bank /> Cartão de Débito
+            <Bank size={16} /> Cartão de Débito
           </label>
 
           <input
@@ -88,7 +92,7 @@ export const CheckoutForm = () => {
             {...register('paymentTypeInput')}
           />
           <label htmlFor="dinheiro">
-            <Bank /> Dinheiro
+            <Money size={16} /> Dinheiro
           </label>
 
         </CheckoutFormRadioWrapper>

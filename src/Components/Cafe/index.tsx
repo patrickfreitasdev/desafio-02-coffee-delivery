@@ -1,10 +1,11 @@
 import { useContext } from "react"
-import { Cafe, CafeContext } from "../../contexts/CafesContext"
+import { CafeContext } from "../../contexts/CafesContext"
 import { CafeItemForm, TagWrapp } from "./styles"
 import { ShoppingCart } from "phosphor-react"
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as zod from 'zod'
+import { Cafe } from "../../reducers/cart/reducer"
 
 const newCafeFormValidationSchema = zod.object({
     cartQtd: zod.number().min(0)

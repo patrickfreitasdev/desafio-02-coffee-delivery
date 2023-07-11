@@ -1,17 +1,8 @@
-import { ReactNode, createContext, useEffect, useState } from "react";
+import { ReactNode, createContext, useEffect, useReducer, useState } from "react";
 import { CafeApi } from "../api/cafes";
 import { useNavigate } from "react-router-dom";
-
-export interface Cafe {
-    id: string;
-    imgPath: string;
-    title: string;
-    tags: string[];
-    description: string;
-    price: number;
-    qtd: number;
-    inCart: boolean;
-}
+import { Cafe, CartReducer, SuccessCheckoutProps } from "../reducers/cart/reducer";
+import { addItemToCartAction, checkoutSuccessAction, eraseCartAction, remoteItemFromCartAction, updateCartAction } from "../reducers/cart/actions";
 
 interface CafeContextType {
     cafes: Cafe[];
@@ -31,18 +22,6 @@ interface CafeContextProps {
     children: ReactNode;
 }
 
-export interface SuccessCheckoutProps {
-    checkoutStatus: boolean,
-    street: string,
-    street_number: string, // some location may not have number lets not handle as fixed number.
-    city: string,
-    state: string,
-    complement?: string,
-    neighborhood: string,
-    shipping_time: string,
-    paymentType: string,
-}
-
 const SuccessCheckoutDefaultValues: SuccessCheckoutProps = {
     checkoutStatus: false,
     street: '',
@@ -54,11 +33,26 @@ const SuccessCheckoutDefaultValues: SuccessCheckoutProps = {
     paymentType: '',
 }
 
+
 export function CafeContextProvider({ children }: CafeContextProps) {
 
     const navigate = useNavigate();
-    const [checkoutSuccess, setCheckoutSuccess] = useState<SuccessCheckoutProps>(SuccessCheckoutDefaultValues);
-    const [cart, setCart] = useState<Cafe[]>(JSON.parse(localStorage.getItem('@v1_coffe_delivery_cart') || '[]'));
+    const [cartState, dispatch] = useReducer(CartReducer, {
+        cart: [],
+        shippingAmount: 3.5,
+        cartAmount: 0,
+        cartTotalItems: 0,
+        checkoutSuccess: SuccessCheckoutDefaultValues
+    }, () => {
+        const storedStateAsJSON = localStorage.getItem('@v1_coffe_delivery_cart');
+
+        if (storedStateAsJSON) {
+            return JSON.parse(storedStateAsJSON);
+        }
+    });
+
+    const { checkoutSuccess, cart, shippingAmount, cartAmount, cartTotalItems } = cartState;
+
     const [cafes, setCafes] = useState<Cafe[]>(
         CafeApi.map(cafe => {
             const isInCart = cart.find((item) => item.id === cafe.id)
@@ -74,72 +68,44 @@ export function CafeContextProvider({ children }: CafeContextProps) {
         })
     );
 
-    const [shippingAmount, setShippingAmount] = useState(3.5);
-    const [cartAmount, setCartmount] = useState(0);
-    const [cartTotalItems, setCartTotalItems] = useState(0);
-
     useEffect(() => {
-
-        const cartTotalItemsReducer = cart.reduce((qtd, cafe) => {
-            return qtd + cafe.qtd
-        }, 0)
-
-        const cartAmountReducer = cart.reduce((price, cafe) => {
-            return price + cafe.price * cafe.qtd
-        }, 0.0)
-
-        setCartTotalItems(cartTotalItemsReducer)
-        setCartmount(cartAmountReducer)
-        localStorage.setItem('@v1_coffe_delivery_cart', JSON.stringify(cart));
-
-        //console.log(cafes)
-
-    }, [cart, cafes]);
+        localStorage.setItem('@v1_coffe_delivery_cart', JSON.stringify(cartState));
+    }, [cartState]);
 
 
     function updateCart(id: string, quantidade: number) {
         if (quantidade === 0) {
             removeItemCart(id);
         } else {
-            const cafeInCart = cart.find((cafe) => cafe.id === id);
-
-            if (cafeInCart) {
-                const updatedCart = cart.map((cafe) => {
-                    if (cafe.id === id) {
-                        return {
-                            ...cafe,
-                            inCart: true,
-                            qtd: quantidade
-                        };
-                    }
-                    return cafe;
-                });
-                setCart(updatedCart);
+            const cafeToUpdate = cart.find((cafe) => cafe.id === id);
+            if (cafeToUpdate) {
+                dispatch(updateCartAction(cafeToUpdate, quantidade));
             } else {
                 const cafeToAdd = cafes.find((cafe) => cafe.id === id);
-
                 if (cafeToAdd) {
                     const cartItem = {
                         ...cafeToAdd,
                         inCart: true,
                         qtd: quantidade
                     };
-
-                    setCart([...cart, cartItem]);
+                    dispatch(addItemToCartAction(cartItem));
                 }
             }
         }
     }
 
     function removeItemCart(id: string) {
-        const updatedCart = cart.filter((cafe) => cafe.id !== id);
-        setCart(updatedCart);
+        dispatch(remoteItemFromCartAction(id));
     }
 
-    function processCartCheckout(data: SuccessCheckoutProps) {
-        setCheckoutSuccess(data);
+    function processCartCheckout(setCheckoutSuccessData: SuccessCheckoutProps) {
+
         localStorage.removeItem('@v1_coffe_delivery_cart');
-        setCart([]);
+
+        dispatch(eraseCartAction());
+
+        dispatch(checkoutSuccessAction(setCheckoutSuccessData))
+
         navigate('/success');
     }
 

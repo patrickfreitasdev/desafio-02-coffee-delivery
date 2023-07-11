@@ -77,9 +77,19 @@ export const NumeroInput = styled(DefaultInputStyle)`
 `
 
 export const ComplementoInputWrapper = styled.div`
+    position: relative;
     grid-area: complemento;
     input{
         width: 100%;
+    }
+    span{
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        font-size: 0.75rem;
+        font-style: italic;
+        font-weight: 400;
+        line-height: 130%;
     }
 `
 
